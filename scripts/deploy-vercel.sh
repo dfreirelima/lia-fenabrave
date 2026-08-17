@@ -12,7 +12,7 @@ $VERCEL_BIN whoami
 echo "==> Link do projeto"
 $VERCEL_BIN link --yes --scope "$SCOPE" --project "$PROJECT"
 
-echo "==> Variáveis de build (EXPO_PUBLIC_* precisam existir no build)"
+echo "==> Variáveis de build (VITE_* precisam existir no build)"
 set -a
 # shellcheck disable=SC1091
 source .env
@@ -25,12 +25,12 @@ add_env() {
   printf '%s' "$val" | $VERCEL_BIN env add "$key" preview --yes >/dev/null 2>&1 || true
 }
 
-add_env EXPO_PUBLIC_SUPABASE_URL "$EXPO_PUBLIC_SUPABASE_URL"
-add_env EXPO_PUBLIC_SUPABASE_ANON_KEY "$EXPO_PUBLIC_SUPABASE_ANON_KEY"
-add_env EXPO_PUBLIC_MONITOR_PIN "$EXPO_PUBLIC_MONITOR_PIN"
+add_env VITE_SUPABASE_URL "$VITE_SUPABASE_URL"
+add_env VITE_SUPABASE_ANON_KEY "$VITE_SUPABASE_ANON_KEY"
+add_env VITE_MONITOR_PIN "$VITE_MONITOR_PIN"
 
 echo "==> Deploy production"
 $VERCEL_BIN deploy --prod --yes --scope "$SCOPE" \
-  -b "EXPO_PUBLIC_SUPABASE_URL=$EXPO_PUBLIC_SUPABASE_URL" \
-  -b "EXPO_PUBLIC_SUPABASE_ANON_KEY=$EXPO_PUBLIC_SUPABASE_ANON_KEY" \
-  -b "EXPO_PUBLIC_MONITOR_PIN=$EXPO_PUBLIC_MONITOR_PIN"
+  -b "VITE_SUPABASE_URL=$VITE_SUPABASE_URL" \
+  -b "VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY" \
+  -b "VITE_MONITOR_PIN=$VITE_MONITOR_PIN"

@@ -1,61 +1,67 @@
-# Fenabrave Monitor
+# Pulse · Fenabrave
 
-App mobile (Expo) somente leitura para acompanhar testes Fenabrave em tempo real.
+Monitor ao vivo (somente leitura) dos testes Fenabrave. É um **PWA** — abre no
+navegador do celular e pode ser instalado na tela de início.
 
 ## Stack
 
-- Expo SDK 54 + Expo Router
-- NativeWind 4 + Reanimated
-- Supabase (views `fenabrave_monitor_*` no projeto LIA_Prod)
+| Camada     | Escolha                                       |
+| ---------- | --------------------------------------------- |
+| Build      | Vite 7 + React 19 + TypeScript 5.9            |
+| Estilo     | Tailwind CSS v4 (tokens CSS-first em `@theme`) |
+| Animação   | Motion (spring physics, layout animations)     |
+| Dados      | TanStack Query v5 + cliente PostgREST próprio  |
+| Estado     | Zustand                                        |
+| PWA        | vite-plugin-pwa (Workbox)                      |
 
-## Setup
+Não usa `@supabase/supabase-js`: o app só faz quatro `GET` em views, então
+`src/lib/rest.ts` fala PostgREST direto e economiza ~250 KB no bundle.
+
+## Rodando
 
 ```bash
 npm install
-cp .env.example .env   # se necessário
-npx expo start
+cp .env.example .env    # preencha as três variáveis
+npm run dev             # http://localhost:5173
 ```
 
-PIN padrão de abertura: valor de `EXPO_PUBLIC_MONITOR_PIN` (padrão `2580`).
+Scripts: `dev`, `build`, `preview`, `typecheck`.
 
 ## Telas
 
-1. **Pulse** — KPIs ao vivo, sparkline, split de domínio e ticker
-2. **Conversas** — inbox + chat estilo WhatsApp (somente leitura)
-3. **Operações** — feed de execuções com saúde LIA/Meta
-4. **Equipe** — ranking de operadores (Lia fora do ranking humano)
+1. **Pulse** — KPIs ao vivo, histograma de execuções, gauges, split de domínio, ticker
+2. **Conversas** — busca, filtros e inbox
+3. **Operações** — saúde das execuções com filtros combinados
+4. **Equipe** — pódio + classificação (Lia reportada à parte)
+5. **/conversa/:id** — thread de leitura estilo mensageiro
+
+O botão âmbar central da barra inferior é o **interruptor do polling** — pausa e
+retoma todas as consultas.
 
 ## Dados
 
-O app só faz `SELECT` nas views:
+Somente `SELECT` nestas views do projeto LIA_Prod:
 
 - `fenabrave_monitor_kpis`
 - `fenabrave_monitor_executions`
 - `fenabrave_monitor_conversations`
 - `fenabrave_monitor_messages`
 
-Polling a cada 2s (pausa em background). Tokens, modelos e payloads **não** são expostos.
+Polling de 2,5–4 s por view, **pausado automaticamente** quando a aba está em
+segundo plano. Tokens, modelos e payloads não são expostos.
 
-## Publicar na Vercel (evento)
+## Deploy (Vercel)
 
-O app web precisa de URL pública. Faça login e publique:
+O build precisa destas variáveis (entram no bundle, use apenas a chave `anon`):
 
-```bash
-npx vercel login --github
-npx vercel --prod --yes --scope dfreirelima-4742s-projects
-```
-
-Ou:
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `VITE_MONITOR_PIN`
 
 ```bash
-chmod +x scripts/deploy-vercel.sh
+npx vercel --prod
+# ou
 ./scripts/deploy-vercel.sh
 ```
 
-No build, a Vercel precisa destas variáveis (`EXPO_PUBLIC_*` entram no bundle):
-
-- `EXPO_PUBLIC_SUPABASE_URL`
-- `EXPO_PUBLIC_SUPABASE_ANON_KEY`
-- `EXPO_PUBLIC_MONITOR_PIN`
-
-PIN de abertura no celular: `2580`.
+PIN padrão de abertura: `2580`.
