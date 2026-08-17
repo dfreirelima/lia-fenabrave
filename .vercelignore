@@ -1,0 +1,14 @@
+node_modules
+.expo
+.npm-cache
+.vercel-cache
+.env
+.env.local
+.deploy-payload.json
+.deploy-payload-slim.json
+deploy-mcp-args.json
+npm-install.log
+expo-export.log
+expo-fix.log
+*.log
+.DS_Store
