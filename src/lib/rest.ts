@@ -1,17 +1,15 @@
 /**
- * Minimal read-only PostgREST client.
+ * Minimal read-only REST client for the monitor API.
  *
- * The monitor only ever issues `GET` against four Supabase views — no auth,
- * no realtime, no storage, no writes. Talking to PostgREST directly instead of
- * pulling in `@supabase/supabase-js` removes ~250 KB (~67 KB gzipped) from the
- * initial download, which is the single largest cost on a phone at an event.
+ * The monitor only ever issues `GET` against four read views — no auth,
+ * no realtime, no storage, no writes.
  */
 
 const BASE = (import.meta.env.VITE_SUPABASE_URL ?? "").replace(/\/+$/, "");
 const KEY = import.meta.env.VITE_SUPABASE_ANON_KEY ?? "";
 
 if (!BASE || !KEY) {
-  console.warn("[pulse] VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY ausentes");
+  console.warn("[pulse] variáveis de ambiente do monitor ausentes");
 }
 
 export type Order = { column: string; ascending?: boolean };

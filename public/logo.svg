@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Holmes">
+  <defs>
+    <!-- Brand gradient sampled from the Holmes mark: royal blue at the
+         top-right falling to violet at the bottom-left. -->
+    <linearGradient id="holmes-g" gradientUnits="userSpaceOnUse" x1="66" y1="2" x2="34" y2="98">
+      <stop offset="0" stop-color="#2277F0" />
+      <stop offset="0.5" stop-color="#6459E6" />
+      <stop offset="1" stop-color="#9A4EEE" />
+    </linearGradient>
+  </defs>
+
+  <!-- Four sheared bars form the H. The two central bars lean one way and the
+       two flanking bars lean the other, which is what gives the mark its
+       pinwheel symmetry. Geometry measured from the original artwork:
+       12.9 x 31 bars, 25 degrees of shear about each bar's own centre. -->
+  <g fill="url(#holmes-g)">
+    <rect x="43" y="12" width="12.9" height="31" rx="2.6"
+          transform="translate(49.45 27.5) skewY(25) translate(-49.45 -27.5)" />
+    <rect x="43" y="60" width="12.9" height="31" rx="2.6"
+          transform="translate(49.45 75.5) skewY(25) translate(-49.45 -75.5)" />
+    <rect x="16" y="36" width="12.9" height="31" rx="2.6"
+          transform="translate(22.45 51.5) skewY(-25) translate(-22.45 -51.5)" />
+    <rect x="70" y="36" width="12.9" height="31" rx="2.6"
+          transform="translate(76.45 51.5) skewY(-25) translate(-76.45 -51.5)" />
+  </g>
+</svg>

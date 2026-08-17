@@ -2,23 +2,21 @@ import { useMemo } from "react";
 import { Link } from "react-router";
 import { motion } from "motion/react";
 import {
-  ArrowUpRight,
   ChevronRight,
-  Clock3,
   MessageSquareDot,
   Send,
   Sparkles,
   Zap,
 } from "lucide-react";
 import { useConversations, useExecutions, useKpis } from "@/lib/queries";
-import { activitySeries } from "@/lib/stats";
+import { activitySeries, isHumanOperator } from "@/lib/stats";
 import { usePulse } from "@/lib/store";
 import {
   domainColor,
-  formatRelative,
   formatTime,
   greeting,
-  toDate,
+  conversationPath,
+  conversationPreview,
 } from "@/lib/format";
 import { Screen, ScreenTitle } from "@/components/Screen";
 import { ActivityChart, RingGauge, SplitBar } from "@/components/charts";
@@ -26,6 +24,7 @@ import { Card, Chip, ErrorNote, SectionHeader, cx } from "@/components/primitive
 import { Counter } from "@/components/Counter";
 import { LiveDot, LivePill } from "@/components/LiveDot";
 import { Avatar } from "@/components/Avatar";
+import { haptics } from "@/lib/haptics";
 
 export default function Home() {
   const kpis = useKpis();
@@ -34,15 +33,17 @@ export default function Home() {
   const live = usePulse((s) => s.live);
 
   const k = kpis.data;
+  const interactions = (k?.talks_faturamento ?? 0) + (k?.talks_pagamento ?? 0);
   // 24 buckets over 2 hours = one bar per 5 minutes. Wide enough to show the
   // shape of a test burst, recent enough to still read as "now".
   const series = useMemo(
     () => activitySeries(executions.data ?? [], 24, 2 * 60 * 60 * 1000),
     [executions.data]
   );
-  const ticker = (executions.data ?? []).slice(0, 6);
-  const liveTalks = (conversations.data ?? []).filter((c) => c.is_live);
-  const freshness = toDate(k?.computed_at);
+  const ticker = (executions.data ?? []).slice(0, 5);
+  const liveTalks = (conversations.data ?? []).filter(
+    (c) => c.is_live && isHumanOperator(c.operator_name)
+  );
 
   const refresh = async () => {
     await Promise.all([kpis.refetch(), executions.refetch(), conversations.refetch()]);
@@ -50,27 +51,16 @@ export default function Home() {
 
   return (
     <Screen
-      glow="var(--color-amber)"
+      glow="var(--color-brand)"
       onRefresh={refresh}
       header={
         <ScreenTitle
-          eyebrow="Nexa · Fenabrave"
+          eyebrow="Nexa View · Fenabrave"
           title={greeting()}
           trailing={<LivePill live={live} />}
         />
       }
     >
-      {/* Freshness chip — the "weather pill" of the reference layout. */}
-      <div className="mt-3 mb-4 flex items-center gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-[11px] font-semibold text-fog hairline">
-          <Clock3 size={12} />
-          Dados de {formatRelative(freshness)}
-        </span>
-        {kpis.isFetching ? (
-          <span className="text-[11px] font-medium text-dim">sincronizando…</span>
-        ) : null}
-      </div>
-
       {kpis.error ? <ErrorNote message={kpis.error.message} /> : null}
 
       {/* ---------------------------------------------------------------- *
@@ -85,7 +75,7 @@ export default function Home() {
         <div
           aria-hidden
           className="absolute -top-20 -right-16 size-56 rounded-full opacity-25 blur-3xl"
-          style={{ background: "var(--color-amber)" }}
+          style={{ background: "var(--color-brand)" }}
         />
 
         <div className="relative flex items-start justify-between">
@@ -104,24 +94,29 @@ export default function Home() {
               </span>
             </div>
             <p className="mt-1.5 text-[12px] text-fog">
-              <Counter value={k?.messages_total} className="font-semibold text-chalk" />{" "}
-              mensagens no evento
+              ativas agora · {k?.conversations_total ?? 0} no evento
+            </p>
+            <p className="mt-0.5 text-[11px] text-dim">
+              1 conversa = operador + fluxo
             </p>
           </div>
 
           <div className="text-right">
-            <p className="text-[12px] font-semibold text-fog">Últimos 15 min</p>
+            <p className="text-[12px] font-semibold text-fog">Execuções</p>
             <div className="mt-2 flex items-center justify-end gap-1.5">
-              <Zap size={20} style={{ color: "var(--color-amber)" }} fill="currentColor" />
-              {/* Amber ties the number to the accent used by the chart below. */}
+              <Zap size={20} style={{ color: "var(--color-brand)" }} fill="currentColor" />
               <Counter
                 value={k?.executions_15m}
-                className="text-[34px] leading-none font-extrabold tracking-tight text-amber"
+                className="text-[34px] leading-none font-extrabold tracking-tight text-brand"
               />
             </div>
             <p className="mt-1.5 text-[12px] text-fog">
-              <Counter value={k?.executions_1h} className="font-semibold text-chalk" /> na
-              última hora
+              últimos 15 min ·{" "}
+              <Counter value={k?.executions_1h} className="font-semibold text-fog" /> na
+              hora
+            </p>
+            <p className="mt-0.5 text-[11px] text-dim">
+              1 execução = 1 rodada do agente
             </p>
           </div>
         </div>
@@ -141,18 +136,18 @@ export default function Home() {
         <SectionHeader title="Acesso rápido" />
         <div className="grid grid-cols-2 gap-3">
           <GaugeTile
-            label="Sucesso LIA"
+            label="% Sucesso Lia"
             value={k?.success_lia_pct ?? 0}
-            hint={`${k?.executions_total ?? 0} execuções`}
+            hint={`${k?.executions_total ?? 0} exec. no evento`}
             color="var(--color-mint)"
             icon={<Sparkles size={16} />}
             delay={0.05}
           />
-          <GaugeTile
-            label="Entrega WhatsApp"
-            value={k?.delivered_pct ?? 0}
-            hint={`Meta ${Math.round(k?.success_meta_pct ?? 0)}%`}
-            color="var(--color-azure)"
+          <StatTile
+            label="Interações WhatsApp"
+            value={interactions}
+            hint={`${k?.talks_atendente ?? 0} atend. · ${k?.talks_webhook ?? 0} autom.`}
+            color="var(--color-brand)"
             icon={<Send size={16} />}
             delay={0.1}
           />
@@ -163,7 +158,10 @@ export default function Home() {
        * Domain split.
        * ---------------------------------------------------------------- */}
       <div className="mt-6">
-        <SectionHeader title="Domínios" />
+        <SectionHeader title="Fluxos" />
+        <p className="-mt-2 mb-3 px-1 text-[11px] text-dim">
+          Número grande = execuções · linha abaixo = interações no chat
+        </p>
         <Card
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -175,13 +173,13 @@ export default function Home() {
               label="Faturamento"
               value={k?.executions_faturamento ?? 0}
               talks={k?.talks_faturamento ?? 0}
-              color="var(--color-azure)"
+              color="var(--color-brand)"
             />
             <DomainStat
               label="Pagamento"
               value={k?.executions_pagamento ?? 0}
               talks={k?.talks_pagamento ?? 0}
-              color="var(--color-mint)"
+              color="var(--color-violet)"
               align="right"
             />
           </div>
@@ -208,29 +206,34 @@ export default function Home() {
               </Link>
             }
           />
-          <div className="flex gap-3 overflow-x-auto pb-1 -mx-4 px-4 scroll-area">
+          <div className="flex items-stretch gap-3 overflow-x-auto pb-1 -mx-4 px-4 scroll-area">
             {liveTalks.slice(0, 6).map((c, i) => (
               <motion.div
                 key={c.conversation_id}
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.05 * i, duration: 0.4 }}
+                className="flex"
               >
-                <Link to={`/conversa/${c.conversation_id}`}>
-                  <Card className="w-56 shrink-0 p-4">
+                <Link
+                  to={conversationPath(c.conversation_id)}
+                  onClick={() => haptics.light()}
+                  className="flex"
+                >
+                  <Card className="flex h-[148px] w-56 shrink-0 flex-col p-4">
                     <div className="flex items-center gap-2.5">
                       <Avatar name={c.operator_name} size={36} live />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-[13px] font-bold text-chalk">
                           {c.operator_name}
                         </p>
-                        <p className="text-[11px] text-dim">{c.turns} turnos</p>
+                        <p className="text-[11px] text-dim">{c.turns} interações</p>
                       </div>
                     </div>
-                    <p className="clamp-2 mt-3 text-[12px] leading-snug text-fog">
-                      {c.last_user_msg ?? "Sem mensagens"}
+                    <p className="mt-3 truncate text-[12px] leading-snug text-fog">
+                      {conversationPreview(c.last_user_msg, c.last_lia_msg, 200)}
                     </p>
-                    <div className="mt-3">
+                    <div className="mt-auto pt-3">
                       <Chip label={c.domain} color={domainColor(c.domain)} />
                     </div>
                   </Card>
@@ -262,34 +265,55 @@ export default function Home() {
               Aguardando execuções do evento…
             </p>
           ) : (
-            ticker.map((e, i) => (
-              <motion.div
-                key={`${e.execution_id}-${i}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.03 * i }}
-                className="flex items-center gap-3 px-4 py-3"
-              >
-                <span
-                  className="grid size-9 shrink-0 place-items-center rounded-xl"
-                  style={{
-                    background: `color-mix(in oklab, ${domainColor(e.domain)} 12%, transparent)`,
-                    color: domainColor(e.domain),
-                  }}
-                >
-                  <MessageSquareDot size={16} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13px] font-bold text-chalk">
-                    {e.holmes_user ?? "—"}
-                  </p>
-                  <p className="text-[11px] text-dim">
-                    {e.domain} · {formatTime(e.created_at)}
-                  </p>
+            ticker.map((e, i) => {
+              const href = e.conversation_id
+                ? conversationPath(e.conversation_id)
+                : undefined;
+              const row = (
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <span
+                    className="grid size-9 shrink-0 place-items-center rounded-xl"
+                    style={{
+                      background: `color-mix(in oklab, ${domainColor(e.domain)} 12%, transparent)`,
+                      color: domainColor(e.domain),
+                    }}
+                  >
+                    <MessageSquareDot size={16} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-bold text-chalk">
+                      {e.holmes_user ?? "—"}
+                    </p>
+                    <p className="text-[11px] text-dim">
+                      {e.domain} · {formatTime(e.created_at)}
+                    </p>
+                  </div>
+                  <HealthDot health={e.health} />
+                  {href ? <ChevronRight size={16} className="shrink-0 text-dim" /> : null}
                 </div>
-                <HealthDot health={e.health} />
-              </motion.div>
-            ))
+              );
+
+              return (
+                <motion.div
+                  key={`${e.execution_id}-${i}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.03 * i }}
+                >
+                  {href ? (
+                    <Link
+                      to={href}
+                      onClick={() => haptics.light()}
+                      className="block active:bg-raised/60"
+                    >
+                      {row}
+                    </Link>
+                  ) : (
+                    row
+                  )}
+                </motion.div>
+              );
+            })
           )}
         </Card>
       </div>
@@ -298,6 +322,52 @@ export default function Home() {
 }
 
 /* ------------------------------------------------------------------ */
+
+function StatTile({
+  label,
+  value,
+  hint,
+  color,
+  icon,
+  delay,
+}: {
+  label: string;
+  value: number;
+  hint: string;
+  color: string;
+  icon: React.ReactNode;
+  delay: number;
+}) {
+  return (
+    <Card
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+      className="p-4"
+    >
+      <div className="mb-3 flex items-center">
+        <span
+          className="grid size-8 place-items-center rounded-xl"
+          style={{
+            background: `color-mix(in oklab, ${color} 14%, transparent)`,
+            color,
+          }}
+        >
+          {icon}
+        </span>
+      </div>
+
+      <p className="text-[13px] leading-tight font-bold text-chalk">{label}</p>
+
+      <div className="mt-3 flex items-center gap-2.5">
+        <p className="text-[32px] leading-none font-extrabold tabular-nums text-chalk">
+          <Counter value={value} />
+        </p>
+        <p className="min-w-0 flex-1 text-[11px] leading-tight text-dim">{hint}</p>
+      </div>
+    </Card>
+  );
+}
 
 function GaugeTile({
   label,
@@ -321,7 +391,7 @@ function GaugeTile({
       transition={{ delay, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
       className="p-4"
     >
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex items-center">
         <span
           className="grid size-8 place-items-center rounded-xl"
           style={{
@@ -331,7 +401,6 @@ function GaugeTile({
         >
           {icon}
         </span>
-        <ArrowUpRight size={15} className="text-dim" />
       </div>
 
       {/* Label spans the full tile width so long names never get clipped. */}
@@ -339,8 +408,8 @@ function GaugeTile({
 
       <div className="mt-3 flex items-center gap-2.5">
         <RingGauge value={value} color={color} size={46} stroke={4.5}>
-          <span className="text-[11px] font-extrabold tabular-nums" style={{ color }}>
-            {Math.round(value)}
+          <span className="text-[10px] font-extrabold tabular-nums" style={{ color }}>
+            {Math.round(value)}%
           </span>
         </RingGauge>
         <p className="min-w-0 flex-1 text-[11px] leading-tight text-dim">{hint}</p>
@@ -374,7 +443,8 @@ function DomainStat({
       <p className="mt-1.5 text-[26px] leading-none font-extrabold tracking-tight text-chalk">
         <Counter value={value} />
       </p>
-      <p className="mt-1 text-[11px] text-dim">{talks} turnos</p>
+      <p className="mt-0.5 text-[11px] font-semibold text-fog">execuções</p>
+      <p className="mt-1 text-[11px] text-dim">{talks} interações</p>
     </div>
   );
 }

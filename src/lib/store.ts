@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 type PulseState = {
-  /** Master switch for background polling — driven by the centre nav button. */
+  /** Master switch for background polling. */
   live: boolean;
   toggleLive: () => void;
 

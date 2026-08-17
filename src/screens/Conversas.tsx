@@ -1,34 +1,41 @@
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { AnimatePresence, motion } from "motion/react";
-import { MessagesSquare, Search, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessagesSquare, Search, X } from "lucide-react";
 import { useConversations } from "@/lib/queries";
-import { domainColor, formatRelative, previewText, toDate } from "@/lib/format";
+import { domainColor, formatRelative, conversationPath, conversationPreview, toDate } from "@/lib/format";
 import type { Conversation, Domain } from "@/lib/types";
 import { Screen, ScreenTitle } from "@/components/Screen";
 import { Card, Chip, EmptyState, ErrorNote, cx } from "@/components/primitives";
 import { Avatar } from "@/components/Avatar";
 import { LiveDot } from "@/components/LiveDot";
 import { haptics } from "@/lib/haptics";
+import { isHumanOperator } from "@/lib/stats";
 
 type Filter = "all" | "live" | Domain;
 
 const FILTERS: { key: Filter; label: string }[] = [
   { key: "all", label: "Todas" },
-  { key: "live", label: "Ao vivo" },
+  { key: "live", label: "Ao vivo · 5 min" },
   { key: "Faturamento", label: "Faturamento" },
   { key: "Pagamento", label: "Pagamento" },
 ];
+
+const PAGE_SIZE = 15;
 
 export default function Conversas() {
   const { data, error, refetch, isLoading } = useConversations();
   const [rawQuery, setRawQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
+  const [page, setPage] = useState(0);
 
   // Keeps typing responsive: the list re-filters at a lower priority.
   const query = useDeferredValue(rawQuery);
 
-  const all = useMemo(() => data ?? [], [data]);
+  const all = useMemo(
+    () => (data ?? []).filter((c) => isHumanOperator(c.operator_name)),
+    [data]
+  );
   const liveCount = useMemo(() => all.filter((c) => c.is_live).length, [all]);
 
   const items = useMemo(() => {
@@ -48,9 +55,24 @@ export default function Conversas() {
     return list;
   }, [all, filter, query]);
 
+  useEffect(() => {
+    setPage(0);
+  }, [filter, query]);
+
+  const pageCount = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const pageItems = items.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
+  const from = items.length === 0 ? 0 : safePage * PAGE_SIZE + 1;
+  const to = Math.min(items.length, safePage * PAGE_SIZE + pageItems.length);
+
+  const go = (next: number) => {
+    haptics.light();
+    setPage(Math.max(0, Math.min(pageCount - 1, next)));
+  };
+
   return (
     <Screen
-      glow="var(--color-azure)"
+      glow="var(--color-violet)"
       onRefresh={refetch}
       header={
         <>
@@ -114,7 +136,7 @@ export default function Conversas() {
                   {active ? (
                     <motion.span
                       layoutId="filter-pill"
-                      className="absolute inset-0 rounded-full bg-amber"
+                      className="absolute inset-0 rounded-full bg-brand"
                       transition={{ type: "spring", stiffness: 450, damping: 36 }}
                     />
                   ) : (
@@ -130,7 +152,13 @@ export default function Conversas() {
     >
       {error ? <ErrorNote message={error.message} /> : null}
 
-      <div className="mt-3 space-y-2">
+      <p className="mt-3 mb-2 px-1 text-[11px] font-semibold tracking-wide text-dim uppercase">
+        {items.length === 0
+          ? "0 conversas"
+          : `${from}–${to} de ${items.length} ${items.length === 1 ? "conversa" : "conversas"}`}
+      </p>
+
+      <div className="space-y-2">
         {items.length === 0 && !isLoading ? (
           <EmptyState
             icon={<MessagesSquare size={22} />}
@@ -142,10 +170,50 @@ export default function Conversas() {
             }
           />
         ) : (
-          items.map((c, i) => <Row key={c.conversation_id} item={c} index={i} />)
+          pageItems.map((c, i) => <Row key={c.conversation_id} item={c} index={i} />)
         )}
       </div>
+
+      {items.length > PAGE_SIZE ? (
+        <Pager page={safePage} pageCount={pageCount} onChange={go} />
+      ) : null}
     </Screen>
+  );
+}
+
+function Pager({
+  page,
+  pageCount,
+  onChange,
+}: {
+  page: number;
+  pageCount: number;
+  onChange: (page: number) => void;
+}) {
+  return (
+    <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-surface px-2 py-2 hairline">
+      <button
+        type="button"
+        onClick={() => onChange(page - 1)}
+        disabled={page <= 0}
+        aria-label="Página anterior"
+        className="grid size-10 place-items-center rounded-xl text-chalk disabled:text-dim"
+      >
+        <ChevronLeft size={20} />
+      </button>
+      <p className="text-[12px] font-semibold tabular-nums text-fog">
+        Página {page + 1} de {pageCount}
+      </p>
+      <button
+        type="button"
+        onClick={() => onChange(page + 1)}
+        disabled={page >= pageCount - 1}
+        aria-label="Próxima página"
+        className="grid size-10 place-items-center rounded-xl text-chalk disabled:text-dim"
+      >
+        <ChevronRight size={20} />
+      </button>
+    </div>
   );
 }
 
@@ -159,7 +227,7 @@ function Row({ item, index }: { item: Conversation; index: number }) {
       // Stagger only the first screenful; later rows appear instantly.
       transition={{ delay: Math.min(index, 8) * 0.035, duration: 0.35 }}
     >
-      <Link to={`/conversa/${item.conversation_id}`} onClick={() => haptics.light()}>
+      <Link to={conversationPath(item.conversation_id)} onClick={() => haptics.light()}>
         <Card className="flex items-center gap-3 p-3.5 active:scale-[0.985] transition-transform">
           <Avatar name={item.operator_name} size={46} live={item.is_live} />
 
@@ -174,13 +242,13 @@ function Row({ item, index }: { item: Conversation; index: number }) {
             </div>
 
             <p className="clamp-1 mt-1 text-[12.5px] text-fog">
-              {previewText(item.last_user_msg, 52)}
+              {conversationPreview(item.last_user_msg, item.last_lia_msg, 52)}
             </p>
 
             <div className="mt-2 flex items-center gap-2">
               <Chip label={item.domain} color={color} />
               <span className="text-[11px] font-medium text-dim">
-                {item.turns} turnos · {item.executions_count} exec
+                {item.turns} interações · {item.executions_count} exec
               </span>
             </div>
           </div>

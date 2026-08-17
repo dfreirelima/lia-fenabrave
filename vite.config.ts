@@ -10,10 +10,10 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.png", "apple-touch-icon.png"],
+      includeAssets: ["favicon.png", "apple-touch-icon.png", "logo.svg", "nexa.svg", "holmes-mark.png", "chat-wallpaper-dark.svg", "lia.png"],
       manifest: {
-        name: "Pulse · Fenabrave",
-        short_name: "Pulse",
+        name: "Nexa View",
+        short_name: "Nexa View",
         description: "Monitor ao vivo Nexa · Fenabrave",
         lang: "pt-BR",
         start_url: "/",

@@ -4,11 +4,13 @@ import { motion } from "motion/react";
 import { ArrowLeft, Eye, MessagesSquare } from "lucide-react";
 import { useConversation, useMessages } from "@/lib/queries";
 import { groupByDay } from "@/lib/stats";
-import { domainColor, formatDay, formatTime } from "@/lib/format";
+import { domainColor, formatDay, formatTime, channelLabel, parseWaBold } from "@/lib/format";
 import type { Message } from "@/lib/types";
 import { Avatar } from "@/components/Avatar";
 import { Chip, EmptyState, ErrorNote, cx } from "@/components/primitives";
 import { LiveDot } from "@/components/LiveDot";
+import { ExitButton } from "@/components/Screen";
+import { NexaSignature } from "@/components/Brand";
 import { haptics } from "@/lib/haptics";
 
 export default function Thread() {
@@ -100,10 +102,11 @@ export default function Thread() {
 
           {conversation ? (
             <Chip
-              label={`${conversation.turns} turnos`}
-              color={domain ? domainColor(domain) : "var(--color-azure)"}
+              label={`${conversation.turns} interações`}
+              color={domain ? domainColor(domain) : "var(--color-brand)"}
             />
           ) : null}
+          <ExitButton />
         </div>
       </header>
 
@@ -114,6 +117,13 @@ export default function Thread() {
         ref={scrollRef}
         onScroll={onScroll}
         className="scroll-area relative flex-1 px-3 py-4"
+        style={{
+          backgroundColor: "#121317",
+          backgroundImage: "url(/chat-wallpaper-dark.svg)",
+          backgroundRepeat: "repeat",
+          backgroundSize: "360px 360px",
+          backgroundAttachment: "local",
+        }}
       >
         {error ? <ErrorNote message={error.message} /> : null}
 
@@ -121,7 +131,7 @@ export default function Thread() {
           <EmptyState
             icon={<MessagesSquare size={22} />}
             title="Sem mensagens"
-            subtitle="Esta conversa ainda não tem turnos registrados."
+            subtitle="Esta conversa ainda não tem interações registradas."
           />
         ) : null}
 
@@ -132,14 +142,20 @@ export default function Thread() {
                 {formatDay(group.day)}
               </span>
             </div>
-            {group.items.map((m, i) => (
-              <Bubble
-                key={m.message_id}
-                message={m}
-                // Label only the first message of a run by the same speaker.
-                showAuthor={group.items[i - 1]?.role !== m.role}
-              />
-            ))}
+            {group.items.map((m, i) => {
+                const prev = group.items[i - 1];
+                const showAuthor =
+                  prev?.role !== m.role ||
+                  (m.role === "lia" && prev?.channel !== m.channel);
+                return (
+                  <Bubble
+                    key={m.message_id}
+                    message={m}
+                    operatorName={name}
+                    showAuthor={showAuthor}
+                  />
+                );
+              })}
           </div>
         ))}
       </div>
@@ -154,6 +170,7 @@ export default function Thread() {
             Somente leitura · o monitor não envia mensagens
           </span>
         </div>
+        <NexaSignature className="mb-2" />
       </div>
     </motion.div>
   );
@@ -164,53 +181,92 @@ export default function Thread() {
 function Bubble({
   message,
   showAuthor,
+  operatorName,
 }: {
   message: Message;
   showAuthor: boolean;
+  operatorName: string;
 }) {
   const isLia = message.role === "lia";
+  const firstName = operatorName.trim().split(/\s+/).filter(Boolean)[0] ?? "Cliente";
+  const author = isLia ? "Lia" : firstName;
+  const origin = isLia ? channelLabel(message.channel) : null;
 
-  // `holmes_author` names the Holmes agent that logged the turn, which is
-  // "Lia" on both sides of the thread. Labelling the customer's bubble with it
-  // would read as Lia talking to herself, so the incoming side is generic.
-  const author = isLia ? "Lia" : "Cliente";
+  const face = showAuthor ? (
+    isLia ? (
+      <img
+        src="/lia.png"
+        alt=""
+        className="size-8 shrink-0 rounded-full object-cover object-top"
+        style={{ boxShadow: "0 0 0 2px color-mix(in oklab, var(--color-violet) 45%, transparent)" }}
+      />
+    ) : (
+      <Avatar name={operatorName} size={32} />
+    )
+  ) : (
+    <span className="size-8 shrink-0" aria-hidden />
+  );
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 8, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-      className={cx("mb-2 flex", isLia ? "justify-end" : "justify-start")}
+      className={cx("mb-2 flex items-start gap-2", isLia ? "justify-end" : "justify-start")}
     >
+      {!isLia ? face : null}
       <div
         className={cx(
-          "max-w-[84%] px-3.5 py-2.5",
-          // Tail corner points at the speaker.
+          "max-w-[78%] px-3.5 py-2.5",
           isLia
             ? "rounded-2xl rounded-br-md"
-            : "rounded-2xl rounded-bl-md"
+            : "rounded-2xl rounded-bl-md hairline"
         )}
         style={{
           background: isLia
-            ? "color-mix(in oklab, var(--color-mint) 16%, var(--color-surface))"
-            : "var(--color-raised)",
+            ? "linear-gradient(145deg, var(--color-violet-deep), var(--color-brand-deep))"
+            : "#2a2e38",
         }}
       >
         {showAuthor ? (
           <p
             className="mb-1 text-[11px] font-bold"
-            style={{ color: isLia ? "var(--color-mint)" : "var(--color-azure)" }}
+            style={{
+              color: isLia ? "#E8E0FF" : "var(--color-brand)",
+            }}
           >
             {author}
           </p>
         ) : null}
         <p className="text-[14.5px] leading-[1.45] whitespace-pre-wrap text-chalk">
-          {message.body}
+          {parseWaBold(message.body).map((run, i) =>
+            run.bold ? (
+              <strong key={i} className="font-bold">
+                {run.text}
+              </strong>
+            ) : (
+              <span key={i}>{run.text}</span>
+            )
+          )}
         </p>
-        <time className="mt-1.5 block text-right text-[10px] font-medium text-dim">
-          {formatTime(message.created_at)}
-        </time>
+        <div className="mt-1.5 flex items-center justify-end gap-1.5">
+          {origin ? (
+            <span
+              className="text-[10px] font-semibold tracking-wide uppercase"
+              style={{ color: isLia ? "rgba(255,255,255,0.72)" : "var(--color-fog)" }}
+            >
+              {origin}
+            </span>
+          ) : null}
+          <time
+            className="text-[10px] font-medium"
+            style={{ color: isLia ? "rgba(255,255,255,0.82)" : "var(--color-fog)" }}
+          >
+            {formatTime(message.created_at)}
+          </time>
+        </div>
       </div>
+      {isLia ? face : null}
     </motion.div>
   );
 }

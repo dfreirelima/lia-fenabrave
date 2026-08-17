@@ -31,21 +31,24 @@ export function Card({
  * ------------------------------------------------------------------ */
 export function Chip({
   label,
-  color = "var(--color-azure)",
+  color = "var(--color-brand)",
   muted = false,
   icon,
+  compact = false,
   className,
 }: {
   label: ReactNode;
   color?: string;
   muted?: boolean;
   icon?: ReactNode;
+  compact?: boolean;
   className?: string;
 }) {
   return (
     <span
       className={cx(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold leading-none whitespace-nowrap",
+        "inline-flex items-center rounded-full font-semibold leading-none whitespace-nowrap",
+        compact ? "gap-1 px-1.5 py-0.5 text-[10px]" : "gap-1.5 px-2.5 py-1 text-[11px]",
         className
       )}
       style={

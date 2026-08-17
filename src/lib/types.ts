@@ -1,6 +1,8 @@
 export type Domain = "Faturamento" | "Pagamento" | "Outro";
 export type Health = "saudavel" | "parcial" | "falha";
 export type MessageRole = "user" | "lia";
+/** How Lia sent the turn: webhook = automatic, atendente = live reply. */
+export type MessageChannel = "webhook" | "atendente" | "outro";
 
 export type Kpis = {
   executions_total: number;
@@ -13,10 +15,16 @@ export type Kpis = {
   delivered_pct: number;
   operators_active: number;
   messages_total: number;
+  /** Outbound replies sent by Lia (automatic + live agent). */
+  lia_messages_total: number;
+  /** Executions with a confirmed WhatsApp delivery id. */
+  deliveries_total: number;
   executions_faturamento: number;
   executions_pagamento: number;
   talks_faturamento: number;
   talks_pagamento: number;
+  talks_webhook: number;
+  talks_atendente: number;
   computed_at: string;
 };
 
@@ -61,6 +69,7 @@ export type Message = {
   role: MessageRole;
   body: string;
   sort_key: number;
+  channel: MessageChannel;
 };
 
 export type OperatorStats = {

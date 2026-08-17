@@ -11,12 +11,10 @@ import { motion } from "motion/react";
  * ------------------------------------------------------------------ */
 export function ActivityChart({
   data,
-  color = "var(--color-amber)",
   height = 88,
   live = false,
 }: {
   data: number[];
-  color?: string;
   height?: number;
   live?: boolean;
 }) {
@@ -53,11 +51,16 @@ export function ActivityChart({
               ease: [0.22, 1, 0.36, 1],
             }}
             style={{
-              background: value === 0 ? "var(--color-line)" : color,
+              background:
+                value === 0
+                  ? "var(--color-line)"
+                  : "linear-gradient(180deg, var(--color-brand) 0%, var(--color-violet-deep) 100%)",
               // Older buckets fade back so the eye lands on recent activity.
               opacity: value === 0 ? 1 : 0.35 + recency * 0.65,
               boxShadow:
-                isLast && value > 0 && live ? `0 0 12px ${color}` : undefined,
+                isLast && value > 0 && live
+                  ? "0 0 12px color-mix(in oklab, var(--color-violet-deep) 70%, transparent)"
+                  : undefined,
             }}
           />
         );
@@ -131,8 +134,8 @@ export function RingGauge({
 export function SplitBar({
   left,
   right,
-  leftColor = "var(--color-azure)",
-  rightColor = "var(--color-mint)",
+  leftColor = "var(--color-brand)",
+  rightColor = "var(--color-violet)",
 }: {
   left: number;
   right: number;

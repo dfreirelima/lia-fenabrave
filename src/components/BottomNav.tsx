@@ -1,12 +1,13 @@
 import { NavLink, useLocation } from "react-router";
 import { motion } from "motion/react";
-import { Activity, MessagesSquare, Radar, Users, Pause, Play } from "lucide-react";
+import { Activity, MessagesSquare, Radar, Users } from "lucide-react";
 import { usePulse } from "@/lib/store";
 import { haptics } from "@/lib/haptics";
 import { cx } from "@/components/primitives";
+import { ViewMark } from "@/components/Brand";
 
 const TABS = [
-  { to: "/", icon: Activity, label: "Pulse", end: true },
+  { to: "/", icon: Activity, label: "Início", end: true },
   { to: "/conversas", icon: MessagesSquare, label: "Conversas", end: false },
   { to: "/operacoes", icon: Radar, label: "Operações", end: false },
   { to: "/equipe", icon: Users, label: "Equipe", end: false },
@@ -15,7 +16,6 @@ const TABS = [
 export function BottomNav({ badge = 0 }: { badge?: number }) {
   const { pathname } = useLocation();
   const live = usePulse((s) => s.live);
-  const toggleLive = usePulse((s) => s.toggleLive);
 
   // The nav is chrome for the tab screens only; threads take the full height.
   if (pathname.startsWith("/conversa/")) return null;
@@ -25,22 +25,16 @@ export function BottomNav({ badge = 0 }: { badge?: number }) {
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 pb-safe">
       <div className="relative mx-auto w-full max-w-lg px-4 pb-3">
-        {/* Centre control: master live switch, raised above the bar. */}
-        <motion.button
-          type="button"
-          onClick={() => {
-            haptics.medium();
-            toggleLive();
-          }}
-          whileTap={{ scale: 0.9 }}
-          transition={{ type: "spring", stiffness: 500, damping: 28 }}
-          aria-label={live ? "Pausar atualização ao vivo" : "Retomar atualização ao vivo"}
-          className="pointer-events-auto absolute left-1/2 -top-4 z-10 grid size-15 -translate-x-1/2 place-items-center rounded-full"
+        {/* Centre mark: app logo, raised above the bar. Pulse stays; it is not a control. */}
+        <div
+          aria-hidden
+          className="absolute left-1/2 -top-4 z-10 grid -translate-x-1/2 place-items-center rounded-full"
           style={{
-            background: live ? "var(--color-amber)" : "var(--color-raised)",
-            color: live ? "#0a0a0c" : "var(--color-fog)",
+            background: live
+              ? "linear-gradient(145deg, var(--color-brand-deep), var(--color-violet-deep))"
+              : "var(--color-raised)",
             boxShadow: live
-              ? "0 8px 28px -6px color-mix(in oklab, var(--color-amber) 60%, transparent)"
+              ? "0 8px 28px -6px color-mix(in oklab, var(--color-violet-deep) 65%, transparent)"
               : "0 8px 24px -8px rgba(0,0,0,0.8)",
             width: 60,
             height: 60,
@@ -50,15 +44,15 @@ export function BottomNav({ badge = 0 }: { badge?: number }) {
             <span
               className="absolute inset-0 rounded-full"
               style={{
-                background: "var(--color-amber)",
+                background: "var(--color-brand)",
                 animation: "pulse-ring 2.4s ease-out infinite",
               }}
             />
           ) : null}
           <span className="relative">
-            {live ? <Pause size={22} strokeWidth={2.6} fill="currentColor" /> : <Play size={22} strokeWidth={2.6} fill="currentColor" />}
+            <ViewMark size={30} inverted />
           </span>
-        </motion.button>
+        </div>
 
         <nav className="glass pointer-events-auto flex items-center rounded-[28px] px-2 py-2 hairline">
           <TabGroup tabs={left} badgeFor="/conversas" badge={badge} />
@@ -98,7 +92,7 @@ function TabGroup({
                   className="absolute inset-0 rounded-2xl"
                   style={{
                     background:
-                      "color-mix(in oklab, var(--color-amber) 10%, transparent)",
+                      "color-mix(in oklab, var(--color-brand) 12%, transparent)",
                   }}
                   transition={{ type: "spring", stiffness: 420, damping: 34 }}
                 />
@@ -109,7 +103,7 @@ function TabGroup({
                   size={21}
                   strokeWidth={isActive ? 2.5 : 2}
                   style={{
-                    color: isActive ? "var(--color-amber)" : "var(--color-dim)",
+                    color: isActive ? "var(--color-brand)" : "var(--color-dim)",
                     transition: "color .2s",
                   }}
                 />
@@ -127,7 +121,7 @@ function TabGroup({
                 className={cx(
                   "relative text-[10px] leading-none font-semibold transition-colors"
                 )}
-                style={{ color: isActive ? "var(--color-amber)" : "var(--color-dim)" }}
+                style={{ color: isActive ? "var(--color-brand)" : "var(--color-dim)" }}
               >
                 {label}
               </span>

@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="420" viewBox="0 0 420 420" fill="none">
+  <g stroke="#9aa3b2" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" opacity="0.155">
+    <!-- speech bubbles -->
+    <path d="M42 48h58a14 14 0 0 1 14 14v28a14 14 0 0 1-14 14H70l-18 14v-14H42a14 14 0 0 1-14-14V62a14 14 0 0 1 14-14z"/>
+    <circle cx="58" cy="76" r="2.2" fill="#c8d0db" stroke="none"/>
+    <circle cx="71" cy="76" r="2.2" fill="#c8d0db" stroke="none"/>
+    <circle cx="84" cy="76" r="2.2" fill="#c8d0db" stroke="none"/>
+    <path d="M310 36h46a12 12 0 0 1 12 12v22a12 12 0 0 1-12 12h-14l-14 12v-12h-18a12 12 0 0 1-12-12V48a12 12 0 0 1 12-12z"/>
+    <!-- phone -->
+    <rect x="168" y="28" width="28" height="48" rx="5"/>
+    <path d="M174 36h16M178 68h8"/>
+    <!-- paper plane -->
+    <path d="M250 110l68-22-28 58-18-16-22 12 8-32z"/>
+    <!-- envelope -->
+    <rect x="48" y="160" width="52" height="34" rx="3"/>
+    <path d="M48 163l26 18 26-18"/>
+    <!-- @ -->
+    <circle cx="360" cy="150" r="16"/>
+    <path d="M366 150a6 6 0 1 1-6-6h4v8"/>
+    <!-- headphones -->
+    <path d="M120 220a28 28 0 0 1 56 0v18"/>
+    <rect x="112" y="228" width="14" height="22" rx="4"/>
+    <rect x="170" y="228" width="14" height="22" rx="4"/>
+    <!-- wifi -->
+    <path d="M236 198c12-12 28-12 40 0"/>
+    <path d="M244 208c7-7 17-7 24 0"/>
+    <circle cx="256" cy="218" r="2.5" fill="#c8d0db" stroke="none"/>
+    <!-- megaphone -->
+    <path d="M52 300l38-14v40L52 312v-12z"/>
+    <path d="M90 292v32"/>
+    <path d="M98 300c8 2 12 8 12 14s-4 12-12 14"/>
+    <!-- camera -->
+    <rect x="170" y="280" width="54" height="36" rx="6"/>
+    <circle cx="197" cy="298" r="10"/>
+    <circle cx="197" cy="298" r="5"/>
+    <path d="M180 280l6-8h14l6 8"/>
+    <!-- heart -->
+    <path d="M300 290c0-10 8-16 16-16 6 0 10 3 12 8 2-5 6-8 12-8 8 0 16 6 16 16 0 18-28 34-28 34s-28-16-28-34z"/>
+    <!-- star -->
+    <path d="M78 370l6 12 14 2-10 9 2 14-12-7-12 7 2-14-10-9 14-2z"/>
+    <!-- location pin -->
+    <path d="M340 330c12 0 22 9 22 22 0 18-22 36-22 36s-22-18-22-36c0-13 10-22 22-22z"/>
+    <circle cx="340" cy="352" r="6"/>
+    <!-- laptop -->
+    <rect x="210" y="350" width="58" height="36" rx="3"/>
+    <path d="M200 390h78"/>
+    <!-- lock -->
+    <rect x="130" y="350" width="28" height="22" rx="3"/>
+    <path d="M136 350v-8a8 8 0 0 1 16 0v8"/>
+    <!-- smile -->
+    <circle cx="380" cy="250" r="18"/>
+    <path d="M372 254c3 5 8 7 13 7s10-2 13-7"/>
+    <circle cx="373" cy="245" r="1.8" fill="#c8d0db" stroke="none"/>
+    <circle cx="387" cy="245" r="1.8" fill="#c8d0db" stroke="none"/>
+    <!-- link -->
+    <path d="M280 200c-6-6-16-6-22 0l-10 10c-6 6-6 16 0 22s16 6 22 0l6-6"/>
+    <path d="M292 188c6 6 6 16 0 22l-10 10c-6 6-16 6-22 0s-6-16 0-22l6-6"/>
+    <!-- music note -->
+    <path d="M390 70v40"/>
+    <circle cx="382" cy="112" r="8"/>
+    <path d="M390 70l22 6v12l-22-6"/>
+    <!-- check double -->
+    <path d="M150 130l8 8 16-18"/>
+    <path d="M160 130l8 8 16-18"/>
+  </g>
+</svg>

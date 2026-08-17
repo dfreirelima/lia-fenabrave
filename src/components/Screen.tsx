@@ -1,8 +1,11 @@
 import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useNavigate } from "react-router";
 import { motion, useMotionValue, animate, useTransform } from "motion/react";
-import { RefreshCw } from "lucide-react";
+import { LogOut, RefreshCw } from "lucide-react";
 import { cx } from "@/components/primitives";
 import { haptics } from "@/lib/haptics";
+import { usePulse } from "@/lib/store";
+import { NexaSignature } from "@/components/Brand";
 
 const PULL_TRIGGER = 72;
 const PULL_MAX = 120;
@@ -13,7 +16,7 @@ const PULL_MAX = 120;
  */
 export function Screen({
   header,
-  glow = "var(--color-amber)",
+  glow = "var(--color-brand)",
   onRefresh,
   children,
   padded = true,
@@ -103,7 +106,7 @@ export function Screen({
               style={{ rotate: refreshing ? undefined : indicatorRotate }}
               className={cx(refreshing && "animate-spin")}
             >
-              <RefreshCw size={15} style={{ color: "var(--color-amber)" }} />
+              <RefreshCw size={15} style={{ color: "var(--color-brand)" }} />
             </motion.span>
           </motion.span>
         </motion.div>
@@ -119,6 +122,7 @@ export function Screen({
         onTouchCancel={onTouchEnd}
       >
         {children}
+        <NexaSignature className="mt-8 mb-2" />
         {/* Clears the floating bottom nav. */}
         <div className="h-28" aria-hidden />
       </motion.div>
@@ -148,7 +152,33 @@ export function ScreenTitle({
           {title}
         </h1>
       </div>
-      {trailing ? <div className="shrink-0 pt-1">{trailing}</div> : null}
+      <div className="flex shrink-0 items-center gap-2 pt-1">
+        {trailing}
+        <ExitButton />
+      </div>
     </div>
+  );
+}
+
+/** Returns to the PIN screen and forgets the session. */
+export function ExitButton() {
+  const lock = usePulse((s) => s.lock);
+  const navigate = useNavigate();
+
+  return (
+    <motion.button
+      type="button"
+      whileTap={{ scale: 0.92 }}
+      onClick={() => {
+        haptics.medium();
+        navigate("/", { replace: true });
+        lock();
+      }}
+      aria-label="Sair"
+      className="inline-flex items-center gap-1.5 rounded-full bg-raised px-3 py-1.5 text-[11px] font-bold text-fog hairline"
+    >
+      <LogOut size={13} strokeWidth={2.4} />
+      Sair
+    </motion.button>
   );
 }

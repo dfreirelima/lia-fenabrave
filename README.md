@@ -1,4 +1,4 @@
-# Pulse · Fenabrave
+# Nexa View · Holmes
 
 Monitor ao vivo (somente leitura) dos testes Fenabrave. É um **PWA** — abre no
 navegador do celular e pode ser instalado na tela de início.
@@ -29,13 +29,13 @@ Scripts: `dev`, `build`, `preview`, `typecheck`.
 
 ## Telas
 
-1. **Pulse** — KPIs ao vivo, histograma de execuções, gauges, split de domínio, ticker
+1. **Início** — KPIs ao vivo, histograma de execuções, gauges, split de domínio, ticker
 2. **Conversas** — busca, filtros e inbox
 3. **Operações** — saúde das execuções com filtros combinados
 4. **Equipe** — pódio + classificação (Lia reportada à parte)
 5. **/conversa/:id** — thread de leitura estilo mensageiro
 
-O botão âmbar central da barra inferior é o **interruptor do polling** — pausa e
+O botão central da barra inferior é o **interruptor do polling** — pausa e
 retoma todas as consultas.
 
 ## Dados

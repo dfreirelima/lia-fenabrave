@@ -1,14 +1,24 @@
 import type { Conversation, Execution, Message, OperatorStats } from "@/lib/types";
 import { toDate } from "@/lib/format";
 
+/** Lia is the AI agent — never a human tester in rankings or conversation lists. */
+export function isHumanOperator(name: string | null | undefined): boolean {
+  return (name ?? "").trim().toLowerCase() !== "lia";
+}
+
+/** Ranking score: one point per conversation thread plus one per execution. */
+export function operatorPoints(op: OperatorStats): number {
+  return op.conversations + op.executions;
+}
+
 /**
- * Aggregate per-operator activity. Lia is the assistant, not a human tester,
- * so she is split out of the ranking and reported on her own.
+ * Aggregate per-operator activity. Lia is the AI agent, never a human tester —
+ * rows attributed to her are excluded from the ranking.
  */
 export function buildOperatorStats(
   conversations: Conversation[],
   executions: Execution[]
-): { humans: OperatorStats[]; lia: OperatorStats | null } {
+): OperatorStats[] {
   const map = new Map<string, OperatorStats>();
 
   const ensure = (name: string): OperatorStats => {
@@ -20,15 +30,21 @@ export function buildOperatorStats(
     return entry;
   };
 
+  const isAgent = (name: string) => !isHumanOperator(name);
+
   for (const c of conversations) {
-    const entry = ensure(c.operator_name || "Desconhecido");
+    const name = c.operator_name || "Desconhecido";
+    if (isAgent(name)) continue;
+    const entry = ensure(name);
     entry.conversations += 1;
     entry.turns += c.turns ?? 0;
     if (c.last_at && (!entry.last_at || c.last_at > entry.last_at)) entry.last_at = c.last_at;
   }
 
   for (const e of executions) {
-    const entry = ensure(e.holmes_user || "Desconhecido");
+    const name = e.holmes_user || "Desconhecido";
+    if (isAgent(name)) continue;
+    const entry = ensure(name);
     entry.executions += 1;
     if (e.created_at && (!entry.last_at || e.created_at > entry.last_at)) {
       entry.last_at = e.created_at;
@@ -41,12 +57,7 @@ export function buildOperatorStats(
     o.share = Math.round(((o.conversations + o.executions) / total) * 100);
   }
 
-  const lia = all.find((o) => o.name.toLowerCase() === "lia") ?? null;
-  const humans = all
-    .filter((o) => o.name.toLowerCase() !== "lia")
-    .sort((a, b) => b.conversations + b.executions - (a.conversations + a.executions));
-
-  return { humans, lia };
+  return all.sort((a, b) => b.conversations + b.executions - (a.conversations + a.executions));
 }
 
 /**

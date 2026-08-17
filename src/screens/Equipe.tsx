@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 import { motion } from "motion/react";
 import { Bot, Crown, Users } from "lucide-react";
-import { useConversations, useExecutions } from "@/lib/queries";
-import { buildOperatorStats } from "@/lib/stats";
+import { useConversations, useExecutions, useKpis } from "@/lib/queries";
+import { buildOperatorStats, operatorPoints } from "@/lib/stats";
 import { formatRelative, toDate } from "@/lib/format";
 import type { OperatorStats } from "@/lib/types";
 import { Screen, ScreenTitle } from "@/components/Screen";
@@ -10,15 +10,32 @@ import { Card, EmptyState, ErrorNote, SectionHeader, cx } from "@/components/pri
 import { Avatar, colorForName } from "@/components/Avatar";
 import { Counter } from "@/components/Counter";
 
-const MEDALS = ["var(--color-amber)", "#B8C0CC", "#CD7F32"];
+// Podium tones follow the brand gradient rather than gold/silver/bronze, so
+// the ranking reads as part of the same system as everything else.
+const MEDALS = ["var(--color-brand)", "var(--color-violet)", "var(--color-fog)"];
 
 export default function Equipe() {
   const conversations = useConversations();
   const executions = useExecutions(250);
+  const kpis = useKpis();
 
-  const { humans, lia } = useMemo(
+  const humans = useMemo(
     () => buildOperatorStats(conversations.data ?? [], executions.data ?? []),
     [conversations.data, executions.data]
+  );
+
+  const agentLastAt = useMemo(() => {
+    const latest = (executions.data ?? [])
+      .map((e) => e.created_at)
+      .filter(Boolean)
+      .sort()
+      .at(-1);
+    return latest ?? kpis.data?.computed_at ?? null;
+  }, [executions.data, kpis.data?.computed_at]);
+
+  const agentInteractions = useMemo(
+    () => (kpis.data?.talks_faturamento ?? 0) + (kpis.data?.talks_pagamento ?? 0),
+    [kpis.data?.talks_faturamento, kpis.data?.talks_pagamento]
   );
 
   const error = conversations.error ?? executions.error;
@@ -26,7 +43,7 @@ export default function Equipe() {
   const rest = humans.slice(3);
 
   const refresh = async () => {
-    await Promise.all([conversations.refetch(), executions.refetch()]);
+    await Promise.all([conversations.refetch(), executions.refetch(), kpis.refetch()]);
   };
 
   // Podium is ordered 2nd · 1st · 3rd so the winner sits in the centre.
@@ -36,7 +53,7 @@ export default function Equipe() {
 
   return (
     <Screen
-      glow="var(--color-mint)"
+      glow="var(--color-violet)"
       onRefresh={refresh}
       header={
         <ScreenTitle
@@ -55,14 +72,11 @@ export default function Equipe() {
         />
       ) : (
         <>
-          {/* ------------------------------------------------------------ *
-           * Podium
-           * ------------------------------------------------------------ */}
-          <Card className="mt-4 p-5 pb-0">
+          <Card className="mt-4 p-5 pb-4">
             <div
               aria-hidden
               className="absolute -top-16 left-1/2 size-48 -translate-x-1/2 rounded-full opacity-20 blur-3xl"
-              style={{ background: "var(--color-amber)" }}
+              style={{ background: "var(--color-brand)" }}
             />
             <div className="relative flex items-end justify-center gap-2.5">
               {podiumLayout.map((op, i) =>
@@ -79,6 +93,9 @@ export default function Equipe() {
                 )
               )}
             </div>
+            <p className="relative mt-4 text-center text-[10.5px] leading-snug text-dim">
+              Top 3 por pontos · cada conversa vale 1 pt + cada execução vale 1 pt
+            </p>
           </Card>
 
           {/* ------------------------------------------------------------ *
@@ -86,7 +103,10 @@ export default function Equipe() {
            * ------------------------------------------------------------ */}
           {rest.length > 0 ? (
             <div className="mt-6">
-              <SectionHeader title="Classificação" />
+              <SectionHeader title="Do 4º em diante" />
+              <p className="-mt-2 mb-3 px-1 text-[11px] text-dim">
+                Os três primeiros ficam no pódio acima.
+              </p>
               <Card className="divide-y divide-line/70 p-0">
                 {rest.map((op, i) => (
                   <RankRow
@@ -100,56 +120,79 @@ export default function Equipe() {
               </Card>
             </div>
           ) : null}
-
-          {/* ------------------------------------------------------------ *
-           * Lia — reported separately, never ranked against humans.
-           * ------------------------------------------------------------ */}
-          {lia ? (
-            <div className="mt-6">
-              <SectionHeader title="Agente Lia" />
-              <Card
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                className="p-5"
-                style={{
-                  background:
-                    "linear-gradient(140deg, color-mix(in oklab, var(--color-mint) 9%, var(--color-surface)), var(--color-surface))",
-                }}
-              >
-                <div className="flex items-center gap-3">
-                  <span
-                    className="grid size-12 place-items-center rounded-2xl"
-                    style={{
-                      background: "color-mix(in oklab, var(--color-mint) 16%, transparent)",
-                      color: "var(--color-mint)",
-                    }}
-                  >
-                    <Bot size={22} />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[15px] font-extrabold text-chalk">Lia</p>
-                    <p className="text-[11.5px] text-fog">
-                      Ativa {formatRelative(toDate(lia.last_at))} · fora do ranking humano
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-4 grid grid-cols-3 gap-2">
-                  <MiniStat label="Conversas" value={lia.conversations} />
-                  <MiniStat label="Execuções" value={lia.executions} />
-                  <MiniStat label="Turnos" value={lia.turns} />
-                </div>
-              </Card>
-            </div>
-          ) : null}
         </>
       )}
+
+      {/* Lia — the AI agent, separate from human testers. */}
+      <div className="mt-6">
+        <SectionHeader title="Agente Lia" />
+        <Card
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          className="p-5"
+          style={{
+            background:
+              "linear-gradient(140deg, color-mix(in oklab, var(--color-mint) 9%, var(--color-surface)), var(--color-surface))",
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <span
+              className="grid size-12 place-items-center rounded-2xl"
+              style={{
+                background: "color-mix(in oklab, var(--color-mint) 16%, transparent)",
+                color: "var(--color-mint)",
+              }}
+            >
+              <Bot size={22} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-extrabold text-chalk">Lia</p>
+              <p className="text-[11.5px] text-fog">
+                Ativa {formatRelative(toDate(agentLastAt))} · agente de IA
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <AgentStat
+              label="Interações WhatsApp"
+              value={agentInteractions}
+              hint={`${kpis.data?.talks_atendente ?? 0} atend. · ${kpis.data?.talks_webhook ?? 0} autom.`}
+            />
+            <AgentStat
+              label="Execuções"
+              value={kpis.data?.executions_total ?? 0}
+              hint="processamentos no evento"
+            />
+          </div>
+        </Card>
+      </div>
     </Screen>
   );
 }
 
 /* ------------------------------------------------------------------ */
+
+function AgentStat({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: number;
+  hint: string;
+}) {
+  return (
+    <div className="rounded-xl bg-raised/60 px-3 py-3">
+      <p className="text-[11px] font-bold leading-tight text-chalk">{label}</p>
+      <p className="mt-2 text-[28px] leading-none font-extrabold tabular-nums text-chalk">
+        <Counter value={value} />
+      </p>
+      <p className="mt-1.5 text-[10px] leading-tight text-dim">{hint}</p>
+    </div>
+  );
+}
 
 function PodiumColumn({
   op,
@@ -164,6 +207,7 @@ function PodiumColumn({
 }) {
   const medal = MEDALS[rank - 1];
   const isFirst = rank === 1;
+  const points = operatorPoints(op);
 
   return (
     <div className="flex flex-1 flex-col items-center">
@@ -200,7 +244,7 @@ function PodiumColumn({
         initial={{ height: 0 }}
         animate={{ height }}
         transition={{ delay: delay + 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="mt-2.5 flex w-full flex-col items-center justify-start rounded-t-2xl pt-2.5"
+        className="mt-2.5 flex w-full flex-col items-center justify-start rounded-t-2xl px-1 pt-2.5 pb-1"
         style={{
           background: `linear-gradient(180deg, color-mix(in oklab, ${medal} 22%, transparent), transparent)`,
           boxShadow: `inset 0 1px 0 0 color-mix(in oklab, ${medal} 45%, transparent)`,
@@ -212,8 +256,11 @@ function PodiumColumn({
         >
           {rank}
         </span>
-        <span className="mt-1 text-[10px] font-medium text-dim">
-          {op.conversations + op.executions}
+        <span className="mt-1 text-[12px] font-bold tabular-nums text-chalk">
+          {points} pts
+        </span>
+        <span className="mt-0.5 text-center text-[9px] leading-tight font-medium text-dim">
+          {op.conversations} conv + {op.executions} exec
         </span>
       </motion.div>
     </div>
@@ -232,6 +279,7 @@ function RankRow({
   leaderShare: number;
 }) {
   const color = colorForName(op.name);
+  const points = operatorPoints(op);
   // Scale against the leader, not against 100 — otherwise a 9% share renders
   // as a 6px nub and the whole column reads as empty.
   const fill = Math.max(6, (op.share / Math.max(leaderShare, 1)) * 100);
@@ -250,7 +298,7 @@ function RankRow({
       <div className="min-w-0 flex-1">
         <p className="truncate text-[13.5px] font-bold text-chalk">{op.name}</p>
         <p className="text-[11px] text-dim">
-          {op.conversations} conversas · {op.executions} exec
+          {points} pts · {op.conversations} conv · {op.executions} exec
         </p>
       </div>
       <div className="w-16 shrink-0">
@@ -268,16 +316,5 @@ function RankRow({
         </p>
       </div>
     </motion.div>
-  );
-}
-
-function MiniStat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-xl bg-raised/60 px-3 py-2.5 text-center">
-      <p className="text-[18px] leading-none font-extrabold text-chalk">
-        <Counter value={value} />
-      </p>
-      <p className="mt-1 text-[10.5px] font-medium text-dim">{label}</p>
-    </div>
   );
 }

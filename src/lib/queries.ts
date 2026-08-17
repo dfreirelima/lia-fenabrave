@@ -66,12 +66,13 @@ export function useConversations() {
 
 export function useMessages(conversationId: string | undefined) {
   const live = usePulse((s) => s.live);
+  const id = conversationId ? decodeURIComponent(conversationId) : undefined;
   return useQuery({
-    queryKey: ["messages", conversationId],
-    enabled: Boolean(conversationId),
+    queryKey: ["messages", id],
+    enabled: Boolean(id),
     queryFn: ({ signal }) =>
       select<Message>("fenabrave_monitor_messages", {
-        eq: { conversation_id: conversationId! },
+        eq: { conversation_id: id! },
         order: { column: "sort_key", ascending: true },
         signal,
       }),
@@ -82,10 +83,9 @@ export function useMessages(conversationId: string | undefined) {
 /** Single conversation header data, served from the already-cached list. */
 export function useConversation(conversationId: string | undefined) {
   const { data, ...rest } = useConversations();
+  const id = conversationId ? decodeURIComponent(conversationId) : undefined;
   return {
     ...rest,
-    data: conversationId
-      ? data?.find((c) => c.conversation_id === conversationId)
-      : undefined,
+    data: id ? data?.find((c) => c.conversation_id === id) : undefined,
   };
 }

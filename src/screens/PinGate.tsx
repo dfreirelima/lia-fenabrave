@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion, useAnimationControls } from "motion/react";
-import { Activity, Delete } from "lucide-react";
+import { Delete } from "lucide-react";
 import { usePulse } from "@/lib/store";
 import { haptics } from "@/lib/haptics";
 import { cx } from "@/components/primitives";
+import { NexaSignature, ViewMark } from "@/components/Brand";
 
 const PIN_LENGTH = 4;
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "del"] as const;
@@ -21,6 +22,7 @@ export function PinGate({ children }: { children: React.ReactNode }) {
     async (value: string) => {
       if (value === expected) {
         haptics.success();
+        setPin("");
         unlock();
       } else {
         haptics.error();
@@ -75,7 +77,7 @@ export function PinGate({ children }: { children: React.ReactNode }) {
         className="pointer-events-none absolute -top-24 left-1/2 h-72 w-[130%] -translate-x-1/2 opacity-40 blur-3xl"
         style={{
           background:
-            "radial-gradient(ellipse at center, var(--color-amber) 0%, transparent 62%)",
+            "radial-gradient(ellipse at center, var(--color-brand) 0%, transparent 62%)",
         }}
       />
 
@@ -87,18 +89,18 @@ export function PinGate({ children }: { children: React.ReactNode }) {
         className="relative flex flex-1 flex-col items-center justify-center"
       >
         <div
-          className="grid size-16 place-items-center rounded-3xl"
+          className="grid size-20 place-items-center rounded-3xl"
           style={{
-            background: "color-mix(in oklab, var(--color-amber) 14%, transparent)",
-            color: "var(--color-amber)",
+            background:
+              "linear-gradient(150deg, color-mix(in oklab, var(--color-brand) 16%, transparent), color-mix(in oklab, var(--color-violet) 14%, transparent))",
           }}
         >
-          <Activity size={30} strokeWidth={2.4} />
+          <ViewMark size={46} />
         </div>
-        <h1 className="mt-5 text-[26px] font-extrabold tracking-tight text-chalk">
-          Pulse
+        <h1 className="mt-5 text-[26px] leading-tight font-extrabold tracking-tight text-chalk">
+          Nexa View
         </h1>
-        <p className="mt-1.5 text-[13px] text-fog">Monitor ao vivo · Fenabrave</p>
+        <p className="mt-2 text-[13px] text-fog">Monitor ao vivo · Fenabrave</p>
 
         {/* PIN dots */}
         <motion.div animate={shake} className="mt-9 flex gap-3.5">
@@ -114,7 +116,7 @@ export function PinGate({ children }: { children: React.ReactNode }) {
                   background: error
                     ? "var(--color-coral)"
                     : filled
-                      ? "var(--color-amber)"
+                      ? "var(--color-brand)"
                       : "var(--color-raised)",
                 }}
               />
@@ -166,6 +168,8 @@ export function PinGate({ children }: { children: React.ReactNode }) {
           )
         )}
       </motion.div>
+
+      <NexaSignature className="relative mb-5" />
     </div>
   );
 }

@@ -4,10 +4,10 @@ import { cx } from "@/components/primitives";
 
 /** Deterministic hue per name, so an operator keeps the same colour anywhere. */
 const PALETTE = [
-  "var(--color-azure)",
-  "var(--color-mint)",
+  "var(--color-brand)",
   "var(--color-violet)",
-  "var(--color-amber)",
+  "var(--color-mint)",
+  "var(--color-violet-deep)",
   "var(--color-coral)",
 ];
 

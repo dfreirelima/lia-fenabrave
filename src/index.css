@@ -16,13 +16,20 @@
   --color-fog: #8b909c;
   --color-dim: #5f646f;
 
-  /* Signature accent + semantic colors */
-  --color-amber: #ffc94a;
-  --color-amber-deep: #e0a41f;
+  /* Brand — sampled from the Holmes mark: royal blue falling to violet.
+     The *-deep values are the measured artwork colours, used for fills and
+     gradients; the lighter pair is what small text and icons use, since the
+     measured tones sit near 3:1 against the near-black surfaces. */
+  --color-brand: #4c8df5;
+  --color-brand-deep: #2a6cdc;
+  --color-violet: #a472f2;
+  --color-violet-deep: #9051e9;
+
+  /* Status colours stay semantic and deliberately off-brand, so health and
+     liveness never read as chrome. */
   --color-mint: #3fe08d;
+  --color-amber: #ffc94a;
   --color-coral: #ff5d5d;
-  --color-azure: #63a0ff;
-  --color-violet: #a98bff;
 
   /* Radii — large and soft, the reference app's defining trait */
   --radius-tile: 1.5rem;
